@@ -1,0 +1,388 @@
+{
+  "version": "2.0",
+  "basePath": "/api",
+  "responseFormats": {
+    "success": {
+      "success": true,
+      "data": {},
+      "message": "Operation completed successfully"
+    },
+    "error": {
+      "success": false,
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Human-readable error message"
+      }
+    },
+    "errorCodes": [
+      "UNAUTHORIZED",
+      "FORBIDDEN",
+      "NOT_FOUND",
+      "VALIDATION_ERROR",
+      "INTERNAL_SERVER_ERROR"
+    ]
+  },
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/api/webhooks/clerk",
+      "description": "Clerk webhook for user events",
+      "requiresClerkSignature": true,
+      "response": {
+        "success": true
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/user",
+      "description": "Get current authenticated user info",
+      "requiresAuth": true,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "string",
+          "email": "string",
+          "firstName": "string | null",
+          "lastName": "string | null",
+          "imageUrl": "string | null",
+          "organizations": [
+            {
+              "id": "string",
+              "name": "string",
+              "role": "ADMIN | MEMBER"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/boards",
+      "description": "List all boards for current organization",
+      "requiresAuth": true,
+      "queryParams": {
+        "organizationId": "string"
+      },
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "string",
+            "title": "string",
+            "description": "string",
+            "organizationId": "string",
+            "createdAt": "ISO_DATE",
+            "updatedAt": "ISO_DATE"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/boards",
+      "description": "Create a new board",
+      "requiresAuth": true,
+      "request": {
+        "body": {
+          "title": "string",
+          "description": "string",
+          "organizationId": "string"
+        }
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "string",
+          "title": "string",
+          "description": "string",
+          "organizationId": "string",
+          "createdAt": "ISO_DATE",
+          "updatedAt": "ISO_DATE"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/boards/:boardId/feedback",
+      "description": "Get all feedback for a board",
+      "requiresAuth": true,
+      "queryParams": {
+        "status": "string (optional)",
+        "sort": "newest | top (optional)",
+        "page": "number (optional, default: 1)",
+        "limit": "number (optional, default: 10)"
+      },
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "string",
+            "title": "string",
+            "description": "string",
+            "status": "OPEN | IN_PROGRESS | COMPLETED | CLOSED",
+            "votes": "number",
+            "hasVoted": "boolean",
+            "commentsCount": "number",
+            "author": {
+              "id": "string",
+              "name": "string",
+              "avatar": "string | null"
+            },
+            "createdAt": "ISO_DATE",
+            "updatedAt": "ISO_DATE"
+          }
+        ],
+        "meta": {
+          "total": "number",
+          "page": "number",
+          "limit": "number",
+          "totalPages": "number"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/boards/:boardId/feedback",
+      "description": "Create new feedback",
+      "requiresAuth": true,
+      "request": {
+        "body": {
+          "title": "string",
+          "description": "string",
+          "category": "string | null"
+        }
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "string",
+          "title": "string",
+          "description": "string",
+          "status": "OPEN",
+          "votes": 0,
+          "hasVoted": false,
+          "author": {
+            "id": "string",
+            "name": "string",
+            "avatar": "string | null"
+          },
+          "createdAt": "ISO_DATE",
+          "updatedAt": "ISO_DATE"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/feedback/:feedbackId/vote",
+      "description": "Vote on feedback",
+      "requiresAuth": true,
+      "response": {
+        "success": true,
+        "data": {
+          "feedbackId": "string",
+          "votes": "number",
+          "hasVoted": "boolean"
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/feedback/:feedbackId/status",
+      "description": "Update feedback status",
+      "requiresAuth": true,
+      "request": {
+        "body": {
+          "status": "OPEN | IN_PROGRESS | COMPLETED | CLOSED"
+        }
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "string",
+          "status": "string"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/feedback/:feedbackId/comments",
+      "description": "Get comments for feedback",
+      "requiresAuth": true,
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "string",
+            "content": "string",
+            "author": {
+              "id": "string",
+              "name": "string",
+              "avatar": "string | null"
+            },
+            "createdAt": "ISO_DATE",
+            "updatedAt": "ISO_DATE"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/feedback/:feedbackId/comments",
+      "description": "Add comment to feedback",
+      "requiresAuth": true,
+      "request": {
+        "body": {
+          "content": "string"
+        }
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "string",
+          "content": "string",
+          "author": {
+            "id": "string",
+            "name": "string",
+            "avatar": "string | null"
+          },
+          "createdAt": "ISO_DATE",
+          "updatedAt": "ISO_DATE"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/organizations",
+      "description": "List all organizations the user is part of",
+      "requiresAuth": true,
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "string",
+            "name": "string",
+            "logo": "string | null",
+            "role": "ADMIN | MEMBER",
+            "createdAt": "ISO_DATE"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/organizations",
+      "description": "Create a new organization",
+      "requiresAuth": true,
+      "request": {
+        "body": {
+          "name": "string",
+          "logo": "string | null"
+        }
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "string",
+          "name": "string",
+          "logo": "string | null",
+          "createdAt": "ISO_DATE"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/:id/members",
+      "description": "List all members of an organization",
+      "requiresAuth": true,
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "string",
+            "name": "string",
+            "email": "string",
+            "avatar": "string | null",
+            "role": "ADMIN | MEMBER",
+            "joinedAt": "ISO_DATE"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/:id/invite",
+      "description": "Invite user to organization by email",
+      "requiresAuth": true,
+      "request": {
+        "body": {
+          "email": "string",
+          "role": "ADMIN | MEMBER"
+        }
+      },
+      "response": {
+        "success": true,
+        "message": "Invitation sent successfully"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/admin/feedback/metrics",
+      "description": "Get feedback metrics and analytics",
+      "requiresAuth": true,
+      "requiresAdmin": true,
+      "response": {
+        "success": true,
+        "data": {
+          "totalFeedback": "number",
+          "totalVotes": "number",
+          "topCategories": [
+            {
+              "name": "string",
+              "count": "number"
+            }
+          ],
+          "statusDistribution": {
+            "OPEN": "number",
+            "IN_PROGRESS": "number",
+            "COMPLETED": "number",
+            "CLOSED": "number"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/search",
+      "description": "Search across feedback and boards",
+      "requiresAuth": true,
+      "queryParams": {
+        "query": "string",
+        "type": "feedback | board | all",
+        "boardId": "string (optional)",
+        "page": "number (optional, default: 1)",
+        "limit": "number (optional, default: 10)"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "results": [
+            {
+              "type": "feedback | board",
+              "id": "string",
+              "title": "string",
+              "description": "string",
+              "boardId": "string | null",
+              "score": "number (relevance score)"
+            }
+          ],
+          "meta": {
+            "total": "number",
+            "page": "number",
+            "limit": "number",
+            "totalPages": "number"
+          }
+        }
+      }
+    }
+  ]
+}
