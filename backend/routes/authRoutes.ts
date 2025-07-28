@@ -8,19 +8,38 @@ const router = express.Router();
 
 router.post("/api/auth/signup", async (req, res) => {
   try {
-    const { email, firstName, lastName, password } = req.body;
+    const { email, firstName, lastName, password, role = Role.MEMBER } = req.body;
+    
+    // Validate required fields
     if (!email || !firstName || !lastName || !password) {
       return res.status(400).json({ error: "Missing required fields" });
     }
+
+    // Validate role is either MEMBER or ADMIN
+    if (role !== Role.MEMBER && role !== Role.ADMIN) {
+      return res.status(400).json({ error: "Invalid role. Must be MEMBER or ADMIN" });
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "User with this email already exists" });
+    }
+
+    // Create new user
     const signupUser = await prisma.user.create({
       data: {
         email,
         firstName,
         lastName,
         password: await bcrypt.hash(password, 10),
-        role: Role.MEMBER,
+        role,
       },
     });
+
     res.status(201).json({
       success: true,
       data: {
@@ -33,7 +52,6 @@ router.post("/api/auth/signup", async (req, res) => {
         },
       },
     });
-    return;
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Internal Server Error in Signup route" });

@@ -23,23 +23,30 @@ router.use(express.urlencoded({ extended: true }));
 
 // Middleware to verify admin access
 const requireAdmin = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    // Get the token from the Authorization header
+    console.log('Headers:', req.headers);
+    let token: string | undefined;
+    
+    // Check for Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ error: 'No token provided' });
+    
+    if (authHeader) {
+        // Handle both "Bearer token" and just "token" formats
+        const parts = authHeader.split(' ');
+        token = parts.length === 2 ? parts[1] : authHeader;
     }
-
-    const token = authHeader.split(' ')[1];
+    
     if (!token) {
+        console.log('No token found');
         return res.status(401).json({ error: 'No token provided' });
     }
 
     try {
-        // Verify the token and check if user is admin
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+        
         if (decoded.role !== 'ADMIN') {
             return res.status(403).json({ error: 'Admin access required' });
         }
+        
         req.user = decoded;
         next();
     } catch (error) {
@@ -100,9 +107,8 @@ router.get("/api/organizations/:id", requireAdmin, async(req, res) => {
 })
 
 
-
 // /organizations/:id/invite - Only admins can invite existing users to organization
-router.post("/api/organizations/:id/invite", requireAdmin, async(req, res) => {
+router.post("/api/organizations/:id/invite", requireAdmin, async (req, res) => {
     try {
         const { email } = req.body;
         
@@ -110,20 +116,36 @@ router.post("/api/organizations/:id/invite", requireAdmin, async(req, res) => {
             return res.status(400).json({ error: "Email is required" });
         }
 
-        // Check if organization exists
+        // Get organization with users (excluding passwords)
         const organization = await prisma.organization.findUnique({
             where: { id: req.params.id },
-            include: { users: true }
+            include: { 
+                users: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                } 
+            }
         });
         
         if (!organization) {
             return res.status(404).json({ error: "Organization not found" });
         }
 
-        // Check if user exists
+        // Get user details (excluding password)
         const user = await prisma.user.findUnique({
             where: { email },
-            include: { organizations: true }
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+            }
         });
 
         if (!user) {
@@ -151,12 +173,30 @@ router.post("/api/organizations/:id/invite", requireAdmin, async(req, res) => {
             }
         });
 
+        // Get updated organization with all users (excluding passwords)
+        const updatedOrg = await prisma.organization.findUnique({
+            where: { id: req.params.id },
+            select: {
+                id: true,
+                name: true,
+                users: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                }
+            }
+        });
+
         res.status(200).json({
             success: true,
             message: "User added to organization successfully",
             data: {
-                userId: user.id,
-                organizationId: req.params.id
+                user,
+                organization: updatedOrg
             }
         });
     } catch (error) {
