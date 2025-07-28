@@ -25,35 +25,76 @@
   "routes": [
     {
       "method": "POST",
-      "path": "/api/webhooks/clerk",
-      "description": "Clerk webhook for user events",
-      "requiresClerkSignature": true,
-      "response": {
-        "success": true
-      }
-    },
-    {
-      "method": "GET",
-      "path": "/api/auth/user",
-      "description": "Get current authenticated user info",
-      "requiresAuth": true,
+      "path": "/api/auth/signup",
+      "description": "Register a new user",
+      "request": {
+        "body": {
+          "email": "string",
+          "firstName": "string",
+          "lastName": "string",
+          "password": "string"
+        }
+      },
       "response": {
         "success": true,
         "data": {
-          "id": "string",
-          "email": "string",
-          "firstName": "string | null",
-          "lastName": "string | null",
-          "imageUrl": "string | null",
-          "organizations": [
-            {
-              "id": "string",
-              "name": "string",
-              "role": "ADMIN | MEMBER"
-            }
-          ]
+          "user": {
+            "id": "string",
+            "email": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "role": "ADMIN | MEMBER"
+          }
         }
-      }
+      },
+      "errorResponses": [
+        {
+          "code": 400,
+          "message": "Missing required fields"
+        },
+        {
+          "code": 500,
+          "message": "Internal Server Error in Signup route"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "Authenticate user and get JWT token",
+      "request": {
+        "body": {
+          "email": "string",
+          "password": "string"
+        }
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": "string",
+            "email": "string",
+            "firstName": "string",
+            "lastName": "string",
+            "role": "ADMIN | MEMBER"
+          }
+        },
+        "token": "jwt_token_here"
+      },
+      "errorResponses": [
+        {
+          "code": 400,
+          "message": "Missing required fields"
+        },
+        {
+          "code": 401,
+          "message": "Invalid credentials"
+        },
+        {
+          "code": 500,
+          "message": "Internal Server Error in Login route"
+        }
+      ]
     },
     {
       "method": "GET",
