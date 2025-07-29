@@ -8,7 +8,7 @@ const router = express.Router();
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
-router.post("/api/boards/:boardId/feedback/:feedbackId/comments", requireAuth, async (req: any, res) => {
+router.post("/api/boards/:boardId/feedback/:feedbackId/comments", requireAuth, async (req: any, res: any) => {
     try {
         const { content } = req.body;
         if (!content) {
@@ -31,7 +31,7 @@ router.post("/api/boards/:boardId/feedback/:feedbackId/comments", requireAuth, a
     }
 });
 
-router.get("/api/boards/:boardId/feedback/:feedbackId/comments", requireAuth, async (req: any, res) => {
+router.get("/api/boards/:boardId/feedback/:feedbackId/comments", requireAuth, async (req: any, res: any) => {
     try {
         const comments = await prisma.comment.findMany({
             where: {
