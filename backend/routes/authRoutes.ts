@@ -93,7 +93,7 @@ router.post("/api/auth/login", async (req, res) => {
         role: loginUser.role,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
     res.status(200).json({
       success: true,
