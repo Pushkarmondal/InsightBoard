@@ -1,5 +1,6 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
+import { requireAuth } from "./organization";
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -7,7 +8,7 @@ const router = express.Router();
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
-router.post("/api/createBoard", async(req, res) => {
+router.post("/api/createBoard", requireAuth, async(req, res) => {
     try {
         const { title, description, organizationId } = req.body;
         if (!title || !description || !organizationId) {
@@ -30,7 +31,8 @@ router.post("/api/createBoard", async(req, res) => {
     }
 })
 
-router.get("/api/boards", async(req, res) => {
+
+router.get("/api/boards", requireAuth, async(req, res) => {
     try {
         const boards = await prisma.board.findMany({
             where: {

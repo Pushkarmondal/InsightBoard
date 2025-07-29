@@ -29,7 +29,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Update the requireAuth middleware (add this if not exists)
-const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1] || req.headers.authorization;
     
     if (!token) {
