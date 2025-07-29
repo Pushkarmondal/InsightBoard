@@ -146,5 +146,68 @@ router.get("/api/feedback/:id", requireAuth, async (req: any, res) => {
     }
 });
 
+// "/feedback/:feedbackId/vote"
+router.post("/api/feedback/:feedbackId/vote", requireAuth, async (req: any, res: any) => {
+    let action: string = "";
+    let updatedFeedback: any;
+    try {
+        const { feedbackId } = req.params;
+        const userId = req.user.id;
+
+        const feedback = await prisma.feedback.findUnique({
+            where: { id: feedbackId }
+        });
+        if (!feedback) {
+            return res.status(404).json({ error: "Feedback not found" });
+        }
+
+        const existingVote = await prisma.vote.findFirst({
+            where: { feedbackId, userId }
+        });
+        await prisma.$transaction(async (tx) => {
+            if (existingVote) {
+                await tx.vote.delete({
+                    where: { id: existingVote.id }
+                });
+                action = 'removed';
+            } else {
+                await tx.vote.create({
+                    data: { feedbackId, userId }
+                });
+                action = 'added';
+            }
+
+            const voteCount = await tx.vote.count({
+                where: { feedbackId }
+            });
+            updatedFeedback = await tx.feedback.update({
+                where: { id: feedbackId },
+                data: { votes: voteCount },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true
+                        }
+                    }
+                }
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                action,
+                voteCount: updatedFeedback?.votes,
+                feedback: updatedFeedback
+            }
+        });
+    } catch (error) {
+        console.error('Error processing vote:', error);
+        res.status(500).json({ error: "Failed to process vote" });
+    }
+});
+
 
 export default router;

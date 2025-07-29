@@ -66,6 +66,12 @@ model Comment {
   updatedAt DateTime @updatedAt 
 }
 
+model Vote {
+  id String @id @default(uuid())
+  feedbackId String
+  userId String
+}
+
 enum Status {
   OPEN
   IN_PROGRESS
