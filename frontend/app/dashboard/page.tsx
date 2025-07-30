@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -27,35 +27,78 @@ const Dashboard = () => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchOrganization = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/auth/login');
-          return;
-        }
-        
-        const response = await axios.get('http://localhost:3333/api/organizations', {
-          headers: {
-            'Authorization': token,
-          },
-        });
-        
-        if (response.data.data) {
-          setOrganization(response.data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching organization:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Filter and paginate members
+  const membersPerPage = 5;
+  
+  const filteredMembers = useMemo(() => {
+    if (!organization?.users) return [];
+    
+    return organization.users.filter((user) => {
+      const searchLower = searchTerm.toLowerCase();
+      const userData = {
+        firstName: user.firstName?.toLowerCase() || '',
+        lastName: user.lastName?.toLowerCase() || '',
+        email: user.email?.toLowerCase() || '',
+        role: user.role?.toLowerCase() || ''
+      };
+      
+      return (
+        userData.firstName.includes(searchLower) ||
+        userData.lastName.includes(searchLower) ||
+        userData.email.includes(searchLower) ||
+        userData.role.includes(searchLower)
+      );
+    });
+  }, [organization, searchTerm]);
 
+  // Pagination
+  const currentPageItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * membersPerPage;
+    return filteredMembers.slice(startIndex, startIndex + membersPerPage);
+  }, [filteredMembers, currentPage, membersPerPage]);
+
+  const totalPages = Math.ceil(filteredMembers.length / membersPerPage);
+  
+
+  useEffect(() => {
+    if (currentPage > 1 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  const fetchOrganization = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+      
+      const response = await axios.get('http://localhost:3333/api/organizations', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.data.data) {
+        setOrganization(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching organization:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
     fetchOrganization();
-  }, [router, setIsLoading]);
+    const intervalId = setInterval(fetchOrganization, 60000 * 10);
+    return () => clearInterval(intervalId);
+  }, [fetchOrganization]);
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +123,6 @@ const Dashboard = () => {
         }
       );
       
-      // Set the new organization
       setOrganization(response.data.data);
       setOrgName('');
       setIsModalOpen(false);
@@ -126,22 +168,82 @@ const Dashboard = () => {
                 </div>
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-foreground mb-1.5 sm:mb-2">Members</h3>
-                <div className="space-y-1">
-                  {organization?.users?.length > 0 ? (
-                    organization.users.map(user => (
-                      <div key={user.id} className="mb-1 last:mb-0">
-                        <p className="text-sm sm:text-base text-foreground">
-                          {user.firstName} {user.lastName}
-                          <span className="text-xs sm:text-sm text-muted-foreground">
-                            ({user.role})
+                <div className="mt-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <h3 className="text-lg font-medium">Members ({organization?.users?.length || 0})</h3>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search members..."
+                        className="w-full sm:w-64 px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-background"
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setCurrentPage(1); 
+                        }}
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {currentPageItems.length > 0 ? (
+                      currentPageItems.map((user) => (
+                        <div key={user.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                              <span className="font-medium text-gray-600 dark:text-gray-300">
+                                {user.firstName?.[0]}{user.lastName?.[0]}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">{user.firstName} {user.lastName}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 text-xs rounded-full ${
+                            user.role === 'ADMIN' 
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' 
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {user.role}
                           </span>
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                        No members found
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No members found</p>
+                    )}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 text-sm font-medium rounded-md border disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 text-sm font-medium rounded-md border disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -161,8 +263,6 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-
-        {/* Create Organization Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-lg flex items-center justify-center p-4 z-50">
             <div className="bg-card text-card-foreground border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full max-w-md shadow-lg rounded-lg mx-2">
