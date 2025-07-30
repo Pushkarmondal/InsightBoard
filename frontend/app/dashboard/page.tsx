@@ -63,13 +63,15 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+        <div className="flex justify-between items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap"
             >
               Create Organization
             </button>
