@@ -100,8 +100,8 @@ const Dashboard = () => {
 
         {/* Create Organization Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-card text-card-foreground border rounded-xl p-6 w-full max-w-md shadow-lg">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-lg flex items-center justify-center p-4 z-50">
+            <div className="bg-card text-card-foreground border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-lg rounded-lg">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Create New Organization</h2>
                 <button
@@ -112,9 +112,9 @@ const Dashboard = () => {
                   }}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  </svg> */}
                 </button>
               </div>
               
@@ -128,7 +128,7 @@ const Dashboard = () => {
                     id="orgName"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                    className="w-full px-3 py-2 bg-background border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                     placeholder="Enter organization name"
                     disabled={isLoading}
                   />
@@ -143,7 +143,7 @@ const Dashboard = () => {
                       setError('');
                       setOrgName('');
                     }}
-                    className="px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
+                    className="px-4 py-2 border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50"
                     disabled={isLoading}
                   >
                     Cancel
