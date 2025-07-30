@@ -1,4 +1,31 @@
+"use client"
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import axios from "axios";
+
 const Login = () => {
+    const [email, setEmail] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+
+    const router = useRouter();
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        axios
+          .post("http://localhost:3333/api/auth/login", {
+            email,
+            password,
+          })
+          .then((res) => {
+            const { token, data } = res.data;
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            router.push("/dashboard");
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      };
     return (
       <div className="min-h-screen bg-gradient-to-br from-auth-gradient-start to-auth-gradient-end flex items-center justify-center p-4">
         <div className="w-full max-w-md relative">
@@ -23,6 +50,8 @@ const Login = () => {
                   id="email"
                   type="email"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 px-4 bg-secondary border border-secondary rounded-lg text-secondary-foreground placeholder-muted-foreground focus:bg-secondary/80 focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 outline-none"
                 />
               </div>
@@ -38,11 +67,14 @@ const Login = () => {
                   id="password"
                   type="password"
                   placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-12 px-4 bg-secondary border border-secondary rounded-lg text-secondary-foreground placeholder-muted-foreground focus:bg-secondary/80 focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 outline-none"
                 />
               </div>
               <button
                 type="submit"
+                onClick={handleSubmit}
                 className="w-full cursor-pointer h-12 bg-primary/90 hover:bg-primary/80 text-primary-foreground font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg"
               >
                 Sign In
@@ -53,6 +85,7 @@ const Login = () => {
                 Don&apos;t have an account?{" "}
                 <a
                   href="/auth/signup"
+                  onClick={() => router.push("/auth/signup")}
                   className="underline cursor-pointer font-semibold"
                 >
                   Create one

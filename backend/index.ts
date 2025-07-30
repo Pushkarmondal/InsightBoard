@@ -4,8 +4,10 @@ import boardsRoute from './routes/boards';
 import organizationRoute from './routes/organization';
 import feedbackRoute from './routes/feedback';
 import commentsRoute from './routes/comments';
+import cors from 'cors';
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(routes);
