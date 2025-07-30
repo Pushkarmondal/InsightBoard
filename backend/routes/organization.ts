@@ -3,6 +3,19 @@ import express from "express";
 import { PrismaClient, Role } from "@prisma/client";
 import jwt from "jsonwebtoken";
 
+// Extend the Request type to include user
+declare global {
+    namespace Express {
+        interface Request {
+            user?: {
+                id: string;
+                email: string;
+                role: Role;
+            };
+        }
+    }
+}
+
 // Define JWT payload type
 type JwtPayload = {
     id: string;
@@ -10,38 +23,23 @@ type JwtPayload = {
     role: Role;
 };
 
-
-const prisma = new PrismaClient();
-const router = express.Router();
-
-router.use(express.json());
-router.use(express.urlencoded({ extended: true }));
-
-// Middleware to verify admin access
-// Add this near the top of the file where other interfaces are defined
-interface AuthenticatedRequest extends Request {
-    user?: {
-        id: string;
-        email: string;
-        role: string;
-        [key: string]: any;
-    };
-}
-
-// Update the requireAuth middleware (add this if not exists)
-export const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.split(' ')[1] || req.headers.authorization;
-    
+// Middleware to check if user is authenticated
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = (req.headers['authorization'] || req.headers['Authorization']) as string | undefined;
+    let token: string | undefined;
+    if (authHeader) {
+        token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    }
     if (!token) {
-        return res.status(401).json({ error: 'No token provided' });
+        return res.status(401).json({ error: 'Authentication required' });
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+        const payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as JwtPayload;
         req.user = {
-            id: decoded.id,
-            email: decoded.email,
-            role: decoded.role,
+            id: payload.id,
+            email: payload.email,
+            role: payload.role
         };
         next();
     } catch (error) {
@@ -49,7 +47,13 @@ export const requireAuth = (req: AuthenticatedRequest, res: Response, next: Next
     }
 };
 
-router.post("/api/organizations", requireAuth, async (req: AuthenticatedRequest, res) => {
+const prisma = new PrismaClient();
+const router = express.Router();
+
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
+router.post("/api/organizations", requireAuth, async (req: Request, res: Response) => {
     try {
         const { name } = req.body;
         const userId = req.user?.id;
@@ -100,12 +104,36 @@ router.post("/api/organizations", requireAuth, async (req: AuthenticatedRequest,
     }
 });
 
-router.get("/api/organizations", requireAuth, async(req, res) => {
+router.get("/api/organizations", requireAuth, async(req: Request, res: Response) => {
     try {
-        const organizations = await prisma.organization.findMany();
+        const organization = await prisma.organization.findFirst({
+            where: {
+                users: {
+                    some: {
+                        id: req.user?.id,
+                        role: Role.ADMIN // Use ADMIN role as OWNER might not exist
+                    }
+                }
+            },
+            include: {
+                users: {
+                    where: {
+                        id: req.user?.id
+                    },
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                }
+            }
+        });
+        
         res.status(200).json({
             success: true,
-            data: organizations,
+            data: organization,
         });
     } catch (error) {
         console.log(error);
