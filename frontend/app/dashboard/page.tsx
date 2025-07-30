@@ -195,7 +195,7 @@ const Dashboard = () => {
                   <div className="space-y-2 mb-4">
                     {currentPageItems.length > 0 ? (
                       currentPageItems.map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <div key={user.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors">
                           <div className="flex items-center space-x-3">
                             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                               <span className="font-medium text-gray-600 dark:text-gray-300">
