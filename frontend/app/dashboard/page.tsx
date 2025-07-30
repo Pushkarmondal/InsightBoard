@@ -61,15 +61,15 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <ThemeToggle />
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base font-medium py-2 px-3 sm:px-4 rounded-lg transition-colors whitespace-nowrap"
             >
               Create Organization
             </button>
@@ -77,22 +77,26 @@ const Dashboard = () => {
         </div>
 
         {organization && (
-          <div className="bg-card text-card-foreground rounded-xl border border-border p-6 mb-6 shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4">Your Organization</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-card text-card-foreground rounded-xl border border-border p-4 sm:p-6 mb-6 shadow-sm">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Your Organization</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <h3 className="text-lg font-medium text-foreground mb-2">Organization Details</h3>
-                <p className="text-muted-foreground"><span className="font-medium">Name:</span> {organization.name}</p>
-                <p className="text-muted-foreground"><span className="font-medium">Created:</span> {new Date(organization.createdAt).toLocaleDateString()}</p>
+                <h3 className="text-base sm:text-lg font-medium text-foreground mb-1.5 sm:mb-2">Organization Details</h3>
+                <div className="space-y-1">
+                  <p className="text-sm sm:text-base text-muted-foreground"><span className="font-medium">Name:</span> {organization.name}</p>
+                  <p className="text-sm sm:text-base text-muted-foreground"><span className="font-medium">Created:</span> {new Date(organization.createdAt).toLocaleDateString()}</p>
+                </div>
               </div>
               <div>
-                <h3 className="text-lg font-medium text-foreground mb-2">Members</h3>
-                {organization.users.map(user => (
-                  <div key={user.id} className="mb-2">
-                    <p className="text-foreground">{user.firstName} {user.lastName} ({user.role})</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                ))}
+                <h3 className="text-base sm:text-lg font-medium text-foreground mb-1.5 sm:mb-2">Members</h3>
+                <div className="space-y-1">
+                  {organization.users.map(user => (
+                    <div key={user.id} className="mb-1 last:mb-0">
+                      <p className="text-sm sm:text-base text-foreground">{user.firstName} {user.lastName} <span className="text-xs sm:text-sm text-muted-foreground">({user.role})</span></p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{user.email}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -101,7 +105,7 @@ const Dashboard = () => {
         {/* Create Organization Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-lg flex items-center justify-center p-4 z-50">
-            <div className="bg-card text-card-foreground border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md shadow-lg rounded-lg">
+            <div className="bg-card text-card-foreground border border-gray-200 dark:border-gray-700 p-4 sm:p-6 w-full max-w-md shadow-lg rounded-lg mx-2">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Create New Organization</h2>
                 <button
