@@ -61,18 +61,31 @@ export default function OrganizationDetails({ params }: { params: { id: string }
           return;
         }
 
+        // Get the current user's ID from the token
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        const currentUserId = tokenData.id;
+
         // Fetch organization data
-        const [orgResponse] = await Promise.all([
-          axios.get(`http://localhost:3333/api/organizations/${params.id}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          })
-        ]);
+        const orgResponse = await axios.get(`http://localhost:3333/api/organizations/${params.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
 
         setOrganization(orgResponse.data.data);
-        setCurrentUser({
-          id: orgResponse.data.data.users[0].id,
-          role: orgResponse.data.data.users[0].role
-        });
+        
+        // Find the current user in the organization's users
+        const currentUserInOrg = orgResponse.data.data.users.find(
+          (user: User) => user.id === currentUserId
+        );
+
+        if (currentUserInOrg) {
+          setCurrentUser({
+            id: currentUserInOrg.id,
+            role: currentUserInOrg.role
+          });
+        } else {
+          // If user not found in organization, redirect to dashboard
+          router.push('/dashboard');
+        }
       } catch (err) {
         console.error('Error fetching organization:', err);
         setError('Failed to load organization details');

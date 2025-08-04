@@ -143,7 +143,9 @@ router.get("/api/organizations", requireAuth, async(req: Request, res: Response)
     }
 })
 
-router.get("/api/organizations/:id", requireAuth, async(req, res) => {
+// In /backend/routes/organization.ts
+
+router.get("/api/organizations/:id", requireAuth, async (req, res) => {
     try {
         const organization = await prisma.organization.findUnique({
             where: {
@@ -151,28 +153,35 @@ router.get("/api/organizations/:id", requireAuth, async(req, res) => {
             },
             include: {
                 users: {
-                    where: {
-                        id: req.user?.id
-                    },
                     select: {
                         id: true,
                         email: true,
                         firstName: true,
                         lastName: true,
                         role: true,
-                    }
+                    },
+                    orderBy: [
+                        { role: 'asc' },  // Show admins first
+                        { firstName: 'asc' },  // Then by first name
+                        { lastName: 'asc' }    // Then by last name
+                    ]
                 }
             },
         });
+
+        if (!organization) {
+            return res.status(404).json({ error: "Organization not found" });
+        }
+
         res.status(200).json({
             success: true,
             data: organization,
         });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: "Internal Server Error in Organization route" });
+        console.error('Error fetching organization:', error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-})
+});
 
 
 // /organizations/:id/invite - Only admins can invite existing users to organization
