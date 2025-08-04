@@ -247,7 +247,13 @@ const Dashboard = () => {
           </div>
         ) : organization ? (
           <div className="flex-grow flex flex-col justify-start pt-32">
-            <div className="bg-card text-card-foreground rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
+            <div 
+              onClick={() => router.push(`/organizations/${organization.id}`)}
+              className="bg-card text-card-foreground rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && router.push(`/organizations/${organization.id}`)}
+            >
               <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Your Organization</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>

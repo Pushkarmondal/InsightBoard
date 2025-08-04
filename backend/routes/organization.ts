@@ -149,6 +149,20 @@ router.get("/api/organizations/:id", requireAuth, async(req, res) => {
             where: {
                 id: req.params.id,
             },
+            include: {
+                users: {
+                    where: {
+                        id: req.user?.id
+                    },
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    }
+                }
+            },
         });
         res.status(200).json({
             success: true,
