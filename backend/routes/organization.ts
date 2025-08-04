@@ -106,12 +106,11 @@ router.post("/api/organizations", requireAuth, async (req: Request, res: Respons
 
 router.get("/api/organizations", requireAuth, async(req: Request, res: Response) => {
     try {
-        const organization = await prisma.organization.findFirst({
+        const organizations = await prisma.organization.findMany({
             where: {
                 users: {
                     some: {
-                        id: req.user?.id,
-                        role: Role.ADMIN // Use ADMIN role as OWNER might not exist
+                        id: req.user?.id
                     }
                 }
             },
@@ -128,12 +127,15 @@ router.get("/api/organizations", requireAuth, async(req: Request, res: Response)
                         role: true,
                     }
                 }
+            },
+            orderBy: {
+                createdAt: 'desc'
             }
         });
         
         res.status(200).json({
             success: true,
-            data: organization,
+            data: organizations,
         });
     } catch (error) {
         console.log(error);

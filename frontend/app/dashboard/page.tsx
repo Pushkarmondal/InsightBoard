@@ -24,7 +24,14 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [orgName, setOrgName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
+  const [isOrgSwitcherOpen, setIsOrgSwitcherOpen] = useState(false);
+  
+  // Get the active organization from the organizations array
+  const organization = useMemo(() => {
+    return organizations.find((org: Organization) => org.id === activeOrgId) || null;
+  }, [organizations, activeOrgId]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,8 +77,9 @@ const Dashboard = () => {
     }
   }, [currentPage, totalPages]);
 
-  const fetchOrganization = useCallback(async () => {
+  const fetchOrganizations = useCallback(async (setInitialOrg = false) => {
     try {
+      setIsLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/auth/login');
@@ -84,21 +92,47 @@ const Dashboard = () => {
         },
       });
       
-      if (response.data.data) {
-        setOrganization(response.data.data);
+      if (response.data.data && response.data.data.length > 0) {
+        const orgs = response.data.data;
+        setOrganizations(orgs);
+        
+        // Set the first organization as active if:
+        // 1. We're explicitly told to set initial org, OR
+        // 2. No org is currently selected, OR
+        // 3. The currently selected org is not in the new list
+        if (setInitialOrg || !activeOrgId || !orgs.some((org: Organization) => org.id === activeOrgId)) {
+          setActiveOrgId(orgs[0].id);
+        }
+      } else {
+        setOrganizations([]);
+        setActiveOrgId(null);
       }
     } catch (error) {
-      console.error('Error fetching organization:', error);
+      console.error('Error fetching organizations:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, activeOrgId]);
+  
+  // Update active organization when organizations or activeOrgId changes
+  useEffect(() => {
+    if (organizations.length > 0) {
+      if (activeOrgId) {
+        const activeOrg = organizations.find(org => org.id === activeOrgId);
+        if (!activeOrg) {
+          setActiveOrgId(organizations[0].id);
+        }
+      } else {
+        setActiveOrgId(organizations[0].id);
+      }
+    }
+  }, [organizations, activeOrgId]);
 
   useEffect(() => {
-    fetchOrganization();
-    const intervalId = setInterval(fetchOrganization, 60000 * 10);
+    fetchOrganizations();
+    const intervalId = setInterval(fetchOrganizations, 60000 * 10);
     return () => clearInterval(intervalId);
-  }, [fetchOrganization]);
+  }, [activeOrgId, router, fetchOrganizations]);
 
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,18 +146,20 @@ const Dashboard = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(
+      // Create the organization and update the list
+      await axios.post(
         'http://localhost:3333/api/organizations',
         { name: orgName },
         {
           headers: {
-            'Authorization': `${token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
       );
       
-      setOrganization(response.data.data);
+      // After creating a new org, refresh the orgs list and set the new one as active
+      await fetchOrganizations(true);
       setOrgName('');
       setIsModalOpen(false);
     } catch (err) {
@@ -135,10 +171,52 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 flex flex-col">
+      <div className="max-w-6xl mx-auto w-full flex-grow flex flex-col">
         <div className="flex justify-between items-center gap-4 mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+            {organizations.length > 0 && (
+              <div className="relative">
+                <button 
+                  onClick={() => setIsOrgSwitcherOpen(!isOrgSwitcherOpen)}
+                  className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 bg-background px-3 py-1.5 rounded-md border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors"
+                >
+                  {organization?.name || 'Select Organization'}
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${isOrgSwitcherOpen ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isOrgSwitcherOpen && (
+                  <div className="absolute z-50 mt-1 w-56 bg-card border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                    <div className="p-1 max-h-60 overflow-y-auto">
+                      {organizations.map((org) => (
+                        <button
+                          key={org.id}
+                          onClick={() => {
+                            setActiveOrgId(org.id);
+                            setIsOrgSwitcherOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+                            org.id === activeOrgId 
+                              ? 'bg-primary/10 text-primary' 
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          {org.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:block">
               <ThemeToggle />
@@ -153,13 +231,25 @@ const Dashboard = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center p-8">
+          <div className="flex-grow flex justify-center items-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
+        ) : organizations.length === 0 ? (
+          <div className="flex-grow flex flex-col justify-center items-center p-8">
+            <h2 className="text-xl font-semibold mb-2">No Organizations Found</h2>
+            <p className="text-muted-foreground mb-4">Create your first organization to get started</p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              Create Organization
+            </button>
+          </div>
         ) : organization ? (
-          <div className="bg-card text-card-foreground rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6 shadow-sm">
-            <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Your Organization</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="flex-grow flex flex-col justify-center">
+            <div className="bg-card text-card-foreground rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
+              <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Your Organization</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <h3 className="text-base sm:text-lg font-medium text-foreground mb-1.5 sm:mb-2">Organization Details</h3>
                 <div className="space-y-1">
@@ -246,6 +336,7 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
+              </div>
               </div>
             </div>
           </div>
