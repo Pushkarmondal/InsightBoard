@@ -5,7 +5,38 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-export function InviteMemberDialog({ organizationId }: { organizationId: string }) {
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  users: User[];
+}
+
+interface InviteResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    organization: Organization;
+  };
+}
+
+export function InviteMemberDialog({ 
+  organizationId,
+  onSuccess,
+}: { 
+  organizationId: string;
+  onSuccess?: (data: InviteResponse) => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +54,7 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
         return;
       }
 
-      await axios.post(
+      const response = await axios.post<InviteResponse>(
         `http://localhost:3333/api/organizations/${organizationId}/invite`,
         { email },
         {
@@ -37,7 +68,14 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
       toast.success('Invitation sent successfully!');
       setEmail('');
       setIsOpen(false);
-      router.refresh(); // Refresh the page to show the updated member list
+      
+      // Call the onSuccess callback with the response data if provided
+      if (onSuccess) {
+        onSuccess(response.data);
+      } else {
+        // Fallback to page refresh if no callback provided
+        router.refresh();
+      }
     } catch (error: unknown) {
       console.error('Error sending invitation:', error);
       let errorMessage = 'Failed to send invitation';

@@ -23,12 +23,33 @@ type Organization = {
   users: User[];
 };
 
+interface InviteResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    organization: Organization;
+  };
+}
+
 export default function OrganizationDetails({ params }: { params: { id: string } }) {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
   const router = useRouter();
+
+  const handleInviteSuccess = (data: InviteResponse) => {
+    if (data?.success && data?.data?.organization) {
+      setOrganization(prevOrg => {
+        if (!prevOrg) return null;
+        return {
+          ...prevOrg,
+          users: data.data.organization.users
+        };
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -157,24 +178,27 @@ export default function OrganizationDetails({ params }: { params: { id: string }
               </div>
             </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Team Members</h2>
-                <div className="flex items-center gap-3">
-                  <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    {organization.users.length} members
+            <div className="bg-card rounded-lg p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold">Team Members</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {organization.users.length} member{organization.users.length !== 1 ? 's' : ''}
                   </span>
                   {currentUser?.role === 'ADMIN' && (
-                    <InviteMemberDialog organizationId={organization.id} />
+                    <InviteMemberDialog 
+                      organizationId={organization.id} 
+                      onSuccess={handleInviteSuccess}
+                    />
                   )}
                 </div>
               </div>
               
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              <div className="space-y-4 mt-6">
                 {organization.users.map((user) => (
                   <div 
-                    key={user.id}
-                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors"
+                    key={user.id} 
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
