@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { InviteMemberDialog } from '@/components/InviteMemberDialog';
 
 type User = {
   id: string;
@@ -26,10 +27,11 @@ export default function OrganizationDetails({ params }: { params: { id: string }
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchOrganization = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         const token = localStorage.getItem('token');
@@ -38,13 +40,18 @@ export default function OrganizationDetails({ params }: { params: { id: string }
           return;
         }
 
-        const response = await axios.get(`http://localhost:3333/api/organizations/${params.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        // Fetch organization data
+        const [orgResponse] = await Promise.all([
+          axios.get(`http://localhost:3333/api/organizations/${params.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          })
+        ]);
 
-        setOrganization(response.data.data);
+        setOrganization(orgResponse.data.data);
+        setCurrentUser({
+          id: orgResponse.data.data.users[0].id,
+          role: orgResponse.data.data.users[0].role
+        });
       } catch (err) {
         console.error('Error fetching organization:', err);
         setError('Failed to load organization details');
@@ -53,7 +60,7 @@ export default function OrganizationDetails({ params }: { params: { id: string }
       }
     };
 
-    fetchOrganization();
+    fetchData();
   }, [params.id, router]);
 
   if (isLoading) {
@@ -153,9 +160,14 @@ export default function OrganizationDetails({ params }: { params: { id: string }
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Team Members</h2>
-                <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  {organization.users.length} members
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    {organization.users.length} members
+                  </span>
+                  {currentUser?.role === 'ADMIN' && (
+                    <InviteMemberDialog organizationId={organization.id} />
+                  )}
+                </div>
               </div>
               
               <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
