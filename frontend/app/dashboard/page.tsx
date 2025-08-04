@@ -246,7 +246,7 @@ const Dashboard = () => {
             </button>
           </div>
         ) : organization ? (
-          <div className="flex-grow flex flex-col justify-center">
+          <div className="flex-grow flex flex-col justify-start pt-32">
             <div className="bg-card text-card-foreground rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
               <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Your Organization</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
