@@ -34,7 +34,6 @@ const Dashboard = () => {
   }, [organizations, activeOrgId]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const router = useRouter();
 
@@ -44,23 +43,10 @@ const Dashboard = () => {
   const filteredMembers = useMemo(() => {
     if (!organization?.users) return [];
     
-    return organization.users.filter((user) => {
-      const searchLower = searchTerm.toLowerCase();
-      const userData = {
-        firstName: user.firstName?.toLowerCase() || '',
-        lastName: user.lastName?.toLowerCase() || '',
-        email: user.email?.toLowerCase() || '',
-        role: user.role?.toLowerCase() || ''
-      };
-      
-      return (
-        userData.firstName.includes(searchLower) ||
-        userData.lastName.includes(searchLower) ||
-        userData.email.includes(searchLower) ||
-        userData.role.includes(searchLower)
-      );
+    return organization.users.filter(() => {
+      return true;
     });
-  }, [organization, searchTerm]);
+  }, [organization]);
 
   // Pagination
   const currentPageItems = useMemo(() => {
@@ -266,27 +252,7 @@ const Dashboard = () => {
               <div>
                 <div className="mt-1">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                    <h3 className="text-lg font-medium">Members ({organization?.users?.length || 0})</h3>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search members..."
-                        className="w-full sm:w-64 px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-background"
-                        value={searchTerm}
-                        onChange={(e) => {
-                          setSearchTerm(e.target.value);
-                          setCurrentPage(1); 
-                        }}
-                      />
-                      {searchTerm && (
-                        <button
-                          onClick={() => setSearchTerm('')}
-                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
+                    <h3 className="text-lg font-medium">Members</h3>
                   </div>
                   <div className="space-y-2 mb-4">
                     {currentPageItems.length > 0 ? (

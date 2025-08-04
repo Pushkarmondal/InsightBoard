@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
@@ -37,7 +37,33 @@ export default function OrganizationDetails({ params }: { params: { id: string }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const router = useRouter();
+
+  // Filter and paginate members
+  const membersPerPage = 5;
+  const filteredMembers = useMemo(() => {
+    if (!organization?.users) return [];
+    
+    return organization.users.filter((user: User) => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        user.firstName?.toLowerCase().includes(searchLower) ||
+        user.lastName?.toLowerCase().includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.role?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [organization?.users, searchTerm]);
+
+  // Get current members for pagination
+  const currentMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * membersPerPage;
+    return filteredMembers.slice(startIndex, startIndex + membersPerPage);
+  }, [filteredMembers, currentPage]);
+
+  const totalPages = Math.ceil(filteredMembers.length / membersPerPage);
 
   const handleInviteSuccess = (data: InviteResponse) => {
     if (data?.success && data?.data?.organization) {
@@ -192,49 +218,109 @@ export default function OrganizationDetails({ params }: { params: { id: string }
             </div>
 
             <div className="bg-card rounded-lg p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Team Members</h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {organization.users.length} member{organization.users.length !== 1 ? 's' : ''}
-                  </span>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <h2 className="text-2xl font-semibold">Team Members</h2>
                   {currentUser?.role === 'ADMIN' && (
                     <InviteMemberDialog 
                       organizationId={organization.id} 
-                      onSuccess={handleInviteSuccess}
+                      onSuccess={handleInviteSuccess} 
                     />
                   )}
                 </div>
+                
+                <div className="relative max-w-md">
+                  <input
+                    type="text"
+                    placeholder="Search members by name, email, or role..."
+                    className="w-full px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-background"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
-              
-              <div className="space-y-4 mt-6">
-                {organization.users.map((user) => (
-                  <div 
-                    key={user.id} 
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                        <span className="font-medium text-gray-600 dark:text-gray-300">
-                          {user.firstName?.[0]}{user.lastName?.[0]}
+              <div className="space-y-4">
+                {currentMembers.length > 0 ? (
+                  <>
+                    {currentMembers.map((user: User) => (
+                      <div 
+                        key={user.id} 
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <span className="font-medium text-gray-600 dark:text-gray-300">
+                              {user.firstName?.[0]}{user.lastName?.[0]}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {user.firstName} {user.lastName}
+                              {currentUser?.id === user.id && ' (You)'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          user.role === 'ADMIN' 
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' 
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          {user.role}
                         </span>
                       </div>
-                      <div>
-                        <p className="font-medium">{user.firstName} {user.lastName}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                    ))}
+                    {totalPages > 1 && (
+                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-border">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-md hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+                        <div className="flex items-center space-x-2">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                            <button
+                              key={number}
+                              onClick={() => setCurrentPage(number)}
+                              className={`px-3 py-1 text-sm font-medium rounded-md ${
+                                currentPage === number
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'text-foreground hover:bg-muted'
+                              }`}
+                            >
+                              {number}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-md hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
                       </div>
-                    </div>
-                    <span 
-                      className={`px-3 py-1 text-xs rounded-full ${
-                        user.role === 'ADMIN' 
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' 
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </div>
-                ))}
+                    )}
+                  </>
+                ) : (
+                  <p className="text-muted-foreground text-sm py-4 text-center">
+                    {searchTerm ? 'No matching members found' : 'No members found'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
